@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branches of Judaism — Sorting Activity</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f0e8;
+    --surface: #faf8f3;
+    --surface2: #f0ece0;
+    --border: #ddd8cc;
+    --text: #1a1410;
+    --text2: #6b6358;
+    --text3: #9c9385;
+    --orth: #1a3a6b;
+    --orth-bg: #e8edf5;
+    --orth-mid: #3a5fa0;
+    --prog: #7a2510;
+    --prog-bg: #f5ede8;
+    --prog-mid: #b04020;
+    --cons: #1a4a25;
+    --cons-bg: #e8f0e8;
+    --cons-mid: #2d7040;
+    --correct: #1a4a25;
+    --correct-bg: #d8f0dc;
+    --wrong: #7a1515;
+    --wrong-bg: #f5dada;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-drag: 0 8px 32px rgba(0,0,0,0.18);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle parchment texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,0,0,0.012) 40px, rgba(0,0,0,0.012) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,0,0,0.008) 40px, rgba(0,0,0,0.008) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; }
+
+  /* Header */
+  header {
+    background: var(--text);
+    color: #f4f0e8;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+  }
+
+  .header-left p {
+    font-size: 13px;
+    color: #a09880;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: #f4f0e8;
+    color: var(--text);
+    border-color: #f4f0e8;
+  }
+  .btn-primary:hover { background: #fffdf7; }
+
+  .btn-ghost {
+    background: transparent;
+    color: #a09880;
+    border-color: #4a4540;
+  }
+  .btn-ghost:hover { color: #f4f0e8; border-color: #7a7060; }
+
+  /* Score bar */
+  #score-bar {
+    display: none;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .score-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .score-num { font-family: 'Crimson Pro', serif; font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+  .score-denom { font-size: 16px; color: var(--text3); }
+
+  .progress-outer {
+    flex: 1;
+    min-width: 120px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-inner {
+    height: 100%;
+    background: var(--cons);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .score-msg {
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    font-style: italic;
+    color: var(--text2);
+  }
+
+  /* Main board */
+  .board-wrap {
+    padding: 24px 24px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* Columns */
+  .col {
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    min-height: 500px;
+    transition: background 0.15s, border-color 0.15s;
+    overflow: hidden;
+  }
+
+  .col.drag-over { border-color: #888; background: var(--surface2); }
+
+  .col-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: inherit;
+    z-index: 2;
+  }
+
+  .col-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  .col-count {
+    font-size: 12px;
+    color: var(--text3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .col-unsorted .col-title { color: var(--text2); }
+  .col-orthodox .col-title { color: var(--orth); }
+  .col-progressive .col-title { color: var(--prog); }
+  .col-conservative .col-title { color: var(--cons); }
+
+  .col-stripe {
+    height: 3px;
+    width: 100%;
+  }
+  .col-unsorted .col-stripe { background: var(--border); }
+  .col-orthodox .col-stripe { background: var(--orth); }
+  .col-progressive .col-stripe { background: var(--prog); }
+  .col-conservative .col-stripe { background: var(--cons); }
+
+  .col-body {
+    padding: 12px;
+    min-height: 440px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: grab;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    font-weight: 300;
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+    position: relative;
+    border-left: 3px solid transparent;
+  }
+
+  .card:hover {
+    border-color: #bbb;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+
+  .card:active { cursor: grabbing; }
+
+  .card.dragging {
+    opacity: 0.35;
+    transform: scale(0.97);
+  }
+
+  .card.drag-clone {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: var(--shadow-drag);
+    transform: rotate(1.5deg) scale(1.03);
+    opacity: 0.95;
+    background: #fffdf7;
+    border-color: #aaa;
+    width: var(--clone-w);
+  }
+
+  .card.state-correct {
+    border-left-color: var(--correct);
+    background: var(--correct-bg);
+    border-color: #a8d8b0;
+  }
+
+  .card.state-wrong {
+    border-left-color: var(--wrong);
+    background: var(--wrong-bg);
+    border-color: #e0a8a8;
+  }
+
+  .card-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: none;
+  }
+
+  .card.state-correct .card-dot { display: block; background: var(--correct); }
+  .card.state-wrong .card-dot { display: block; background: var(--wrong); }
+
+  /* Legend */
+  .legend {
+    padding: 14px 24px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    .board { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 580px) {
+    .board { grid-template-columns: 1fr; }
+    header { padding: 16px; }
+    .board-wrap { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-left">
+      <h1>Branches of Judaism</h1>
+      <p>Drag each card into the correct branch — Orthodox, Progressive, or Conservative</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-primary" onclick="checkAnswers()">Check answers</button>
+      <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+    </div>
+  </header>
+
+  <div id="score-bar">
+    <div>
+      <div class="score-label">Score</div>
+      <span class="score-num" id="score-num">0</span>
+      <span class="score-denom"> / 15</span>
+    </div>
+    <div class="progress-outer">
+      <div class="progress-inner" id="progress-inner"></div>
+    </div>
+    <div class="score-msg" id="score-msg"></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board">
+
+      <div class="col col-unsorted" id="col-unsorted" data-col="unsorted">
+        <div class="col-stripe"></div>
+        <div class="col-head">
+          <span class="col-title">Cards to sort</span>
+          <span class="col-count" id="cnt-unsorted">15</span>
+        </div>
+        <div class="col-body" id="body-unsorted"></div>
+      </div>
+
+      <div class="col col-orthodox" id="col-orthodox" data-col="orthodox">
+        <div class="col-stripe"></div>
+        <div class="col-head">
+          <span class="col-title">Orthodox</span>
+          <span class="col-count" id="cnt-orthodox">0</span>
+        </div>
+        <div class="col-body" id="body-orthodox"></div>
+      </div>
+
+      <div class="col col-progressive" id="col-progressive" data-col="progressive">
+        <div class="col-stripe"></div>
+        <div class="col-head">
+          <span class="col-title">Progressive</span>
+          <span class="col-count" id="cnt-progressive">0</span>
+        </div>
+        <div class="col-body" id="body-progressive"></div>
+      </div>
+
+      <div class="col col-conservative" id="col-conservative" data-col="conservative">
+        <div class="col-stripe"></div>
+        <div class="col-head">
+          <span class="col-title">Conservative</span>
+          <span class="col-count" id="cnt-conservative">0</span>
+        </div>
+        <div class="col-body" id="body-conservative"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--correct)"></div> Correct placement</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--wrong)"></div> Incorrect — try again</div>
+    <div class="legend-item" style="margin-left:auto;color:var(--text3);font-size:11px;">Studies of Religion · Branches of Judaism sorting activity</div>
+  </div>
+
+</div>
+
+<script>
+const CARDS = [
+  { id:'c1',  text:'Accepts the authority of the code of Jewish law and rejects modernist adjustments of the Progressive movement.', answer:'orthodox' },
+  { id:'c2',  text:'Rejects much of the modern world — symbolised by denigrating secular studies and dressing in stylised ghetto clothing.', answer:'orthodox' },
+  { id:'c3',  text:'Distinguished by its traditional forms of worship conducted in Hebrew.', answer:'orthodox' },
+  { id:'c4',  text:'Modern Orthodoxy balances the requirements of living in modern circumstances while remaining faithful to the dual Torah.', answer:'orthodox' },
+  { id:'c5',  text:'Religious services are held in the local language of the community rather than in Hebrew.', answer:'progressive' },
+  { id:'c6',  text:'Men and women sit together during worship, and women may serve as rabbis and readers of the Torah.', answer:'progressive' },
+  { id:'c7',  text:'Rejected beliefs in a personal Messiah, resurrection of the dead, and return to the Holy Land.', answer:'progressive' },
+  { id:'c8',  text:'Synagogues in this branch are known as temples, and the organ is used in services — borrowed from church practice.', answer:'progressive' },
+  { id:'c9',  text:'The Torah needs to be interpreted so as to capture the spirit of the age — a lessening of the importance of traditional Jewish laws.', answer:'progressive' },
+  { id:'c10', text:'Has been more supportive of Zionism and shown a greater interest in the revival of ritual since the Holocaust.', answer:'progressive' },
+  { id:'c11', text:'Accepts the authority of the Oral Law, but reserves the right to reinterpret it in keeping with changing needs.', answer:'conservative' },
+  { id:'c12', text:'Sympathetic to modern Western ways of thinking, but more traditional than Progressive Judaism — especially in matters of worship.', answer:'conservative' },
+  { id:'c13', text:'Places great importance on a universal people of Israel, the centrality of the land, continuation of Jewish tradition, and the sponsoring of Jewish scholarship.', answer:'conservative' },
+  { id:'c14', text:'In recent times, women have been allowed into rabbinical schools.', answer:'conservative' },
+  { id:'c15', text:'The service includes prayers in English, although most of the service is still conducted in Hebrew.', answer:'conservative' },
+];
+
+let locations = {};
+let checked = false;
+let dragId = null;
+let clone = null;
+let offsetX = 0, offsetY = 0;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function init() {
+  checked = false;
+  locations = {};
+  shuffle(CARDS).forEach(c => locations[c.id] = 'unsorted');
+  render();
+  document.getElementById('score-bar').style.display = 'none';
+}
+
+function render() {
+  const cols = { unsorted:[], orthodox:[], progressive:[], conservative:[] };
+  CARDS.forEach(c => cols[locations[c.id]].push(c.id));
+
+  Object.keys(cols).forEach(col => {
+    const body = document.getElementById('body-' + col);
+    body.innerHTML = '';
+    document.getElementById('cnt-' + col).textContent = cols[col].length;
+
+    cols[col].forEach(id => {
+      const data = CARDS.find(c => c.id === id);
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.id = 'card-' + id;
+      div.innerHTML = data.text + '<div class="card-dot"></div>';
+
+      if (checked && col !== 'unsorted') {
+        div.classList.add(locations[id] === data.answer ? 'state-correct' : 'state-wrong');
+      }
+
+      div.addEventListener('mousedown', e => startDrag(e, id));
+      div.addEventListener('touchstart', e => startDragTouch(e, id), { passive: false });
+      body.appendChild(div);
+    });
+  });
+
+  setupDropZones();
+}
+
+function setupDropZones() {
+  document.querySelectorAll('.col-body').forEach(body => {
+    body.addEventListener('dragover', e => e.preventDefault());
+  });
+}
+
+function startDrag(e, id) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  dragId = id;
+  const card = document.getElementById('card-' + id);
+  const rect = card.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+  card.classList.add('dragging');
+  createClone(card, rect);
+  moveClone(e.clientX, e.clientY);
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+function startDragTouch(e, id) {
+  e.preventDefault();
+  dragId = id;
+  const touch = e.touches[0];
+  const card = document.getElementById('card-' + id);
+  const rect = card.getBoundingClientRect();
+  offsetX = touch.clientX - rect.left;
+  offsetY = touch.clientY - rect.top;
+  card.classList.add('dragging');
+  createClone(card, rect);
+  moveClone(touch.clientX, touch.clientY);
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', onTouchEnd);
+}
+
+function createClone(card, rect) {
+  clone = card.cloneNode(true);
+  clone.classList.add('drag-clone');
+  clone.classList.remove('dragging');
+  clone.style.setProperty('--clone-w', rect.width + 'px');
+  clone.style.left = rect.left + 'px';
+  clone.style.top = rect.top + 'px';
+  document.body.appendChild(clone);
+}
+
+function moveClone(x, y) {
+  if (!clone) return;
+  clone.style.left = (x - offsetX) + 'px';
+  clone.style.top = (y - offsetY) + 'px';
+}
+
+function onMouseMove(e) { moveClone(e.clientX, e.clientY); }
+function onTouchMove(e) { e.preventDefault(); moveClone(e.touches[0].clientX, e.touches[0].clientY); }
+
+function getColAtPoint(x, y) {
+  document.querySelectorAll('.col').forEach(c => c.classList.remove('drag-over'));
+  const cols = document.querySelectorAll('.col');
+  for (const col of cols) {
+    const r = col.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+      col.classList.add('drag-over');
+      return col.dataset.col;
+    }
+  }
+  return null;
+}
+
+function endDrag(x, y) {
+  document.querySelectorAll('.col').forEach(c => c.classList.remove('drag-over'));
+  const target = getColAtPoint(x, y);
+  if (target && dragId) {
+    locations[dragId] = target;
+    if (checked) checkAnswers();
+    else render();
+  }
+  if (clone) { clone.remove(); clone = null; }
+  if (dragId) {
+    const card = document.getElementById('card-' + dragId);
+    if (card) card.classList.remove('dragging');
+  }
+  dragId = null;
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', onMouseUp);
+  document.removeEventListener('touchmove', onTouchMove);
+  document.removeEventListener('touchend', onTouchEnd);
+  document.querySelectorAll('.col').forEach(c => c.classList.remove('drag-over'));
+}
+
+function onMouseUp(e) { endDrag(e.clientX, e.clientY); }
+function onTouchEnd(e) {
+  const t = e.changedTouches[0];
+  endDrag(t.clientX, t.clientY);
+}
+
+function checkAnswers() {
+  checked = true;
+  let correct = 0;
+  CARDS.forEach(c => { if (locations[c.id] === c.answer) correct++; });
+  render();
+  const bar = document.getElementById('score-bar');
+  bar.style.display = 'flex';
+  document.getElementById('score-num').textContent = correct;
+  document.getElementById('progress-inner').style.width = Math.round(correct / CARDS.length * 100) + '%';
+  const msgs = ['Keep working through them!', 'Good start — keep going!', 'Nice effort — almost there!', 'Very well done!', 'Perfect — full marks!'];
+  const idx = correct === 15 ? 4 : correct >= 13 ? 3 : correct >= 9 ? 2 : correct >= 5 ? 1 : 0;
+  document.getElementById('score-msg').textContent = msgs[idx];
+}
+
+function resetAll() { init(); }
+
+init();
+</script>
+</body>
+</html>
